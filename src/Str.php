@@ -43,7 +43,7 @@ class Str {
 	}
 
 	/**
-	 * Check if a string contains all of the given needles.
+	 * Check if a string contains all the given needles.
 	 *
 	 * @param string $haystack   The string to search in.
 	 * @param string ...$needles The strings to search for.
