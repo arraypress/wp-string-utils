@@ -22,7 +22,9 @@ namespace ArrayPress\StringUtils;
  */
 class Str {
 
-	/** String Checking *******************************************************/
+	// ========================================
+	// String Checking
+	// ========================================
 
 	/**
 	 * Check if a string contains any of the given needles.
@@ -154,58 +156,14 @@ class Str {
 	}
 
 	/**
-	 * Check if a string contains only alphanumeric characters.
-	 *
-	 * @param string $string The string to validate.
-	 *
-	 * @return bool True if the string is alphanumeric.
-	 */
-	public static function is_alphanumeric( string $string ): bool {
-		return ctype_alnum( $string );
-	}
-
-	/**
-	 * Check if a string is numeric.
+	 * Check if a string is empty or only whitespace.
 	 *
 	 * @param string $string The string to check.
 	 *
-	 * @return bool True if the string is numeric.
+	 * @return bool True if the string is blank.
 	 */
-	public static function is_numeric( string $string ): bool {
-		return is_numeric( $string );
-	}
-
-	/**
-	 * Check if a string is an integer.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is an integer.
-	 */
-	public static function is_integer( string $string ): bool {
-		return filter_var( $string, FILTER_VALIDATE_INT ) !== false;
-	}
-
-	/**
-	 * Check if a string is a float.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is a float.
-	 */
-	public static function is_float( string $string ): bool {
-		return filter_var( $string, FILTER_VALIDATE_FLOAT ) !== false;
-	}
-
-	/**
-	 * Check if a string is a valid email address.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is a valid email.
-	 */
-	public static function is_email( string $string ): bool {
-		return is_email( $string );
+	public static function is_blank( string $string ): bool {
+		return trim( $string ) === '';
 	}
 
 	/**
@@ -220,36 +178,14 @@ class Str {
 	}
 
 	/**
-	 * Check if a string is a valid date.
+	 * Check if a string is alphanumeric.
 	 *
-	 * @param string $string The string to check.
+	 * @param string $string The string to validate.
 	 *
-	 * @return bool True if the string is a valid date.
+	 * @return bool True if the string is alphanumeric.
 	 */
-	public static function is_date( string $string ): bool {
-		return strtotime( $string ) !== false;
-	}
-
-	/**
-	 * Check if a string is a valid IP address.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is a valid IP.
-	 */
-	public static function is_ip( string $string ): bool {
-		return filter_var( $string, FILTER_VALIDATE_IP ) !== false;
-	}
-
-	/**
-	 * Check if a string contains only alphabetic characters.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is alphabetic.
-	 */
-	public static function is_alpha( string $string ): bool {
-		return ctype_alpha( $string );
+	public static function is_alphanumeric( string $string ): bool {
+		return ctype_alnum( $string );
 	}
 
 	/**
@@ -274,44 +210,9 @@ class Str {
 		return $string === strtolower( $string ) && ctype_alpha( $string );
 	}
 
-	/**
-	 * Check if a string is empty or only whitespace.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is blank.
-	 */
-	public static function is_blank( string $string ): bool {
-		return trim( $string ) === '';
-	}
-
-	/**
-	 * Check if a string contains only hexadecimal characters.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is hexadecimal.
-	 */
-	public static function is_hex( string $string ): bool {
-		return ctype_xdigit( $string );
-	}
-
-	/**
-	 * Check if a string's length is within a specified range.
-	 *
-	 * @param string $string     The string to check.
-	 * @param int    $min_length The minimum allowed length.
-	 * @param int    $max_length The maximum allowed length.
-	 *
-	 * @return bool True if the string length is within range.
-	 */
-	public static function is_length_valid( string $string, int $min_length = 1, int $max_length = PHP_INT_MAX ): bool {
-		$length = mb_strlen( $string );
-
-		return ( $length >= $min_length && $length <= $max_length );
-	}
-
-	/** String Manipulation ***************************************************/
+	// ========================================
+	// String Manipulation
+	// ========================================
 
 	/**
 	 * Replace the first occurrence of a string.
@@ -439,18 +340,9 @@ class Str {
 		return preg_replace( '/\s+/', '', $string );
 	}
 
-	/**
-	 * Remove line breaks from a string.
-	 *
-	 * @param string $string The input string.
-	 *
-	 * @return string The string with line breaks removed.
-	 */
-	public static function remove_line_breaks( string $string ): string {
-		return str_replace( [ "\r", "\n", PHP_EOL ], '', trim( $string ) );
-	}
-
-	/** Case Conversion *******************************************************/
+	// ========================================
+	// Case Conversion
+	// ========================================
 
 	/**
 	 * Convert a string to camelCase.
@@ -501,39 +393,19 @@ class Str {
 	}
 
 	/**
-	 * Convert to uppercase.
-	 *
-	 * @param mixed $value The value to convert.
-	 *
-	 * @return string The uppercase string.
-	 */
-	public static function upper( $value ): string {
-		return strtoupper( self::from( $value ) );
-	}
-
-	/**
-	 * Convert to lowercase.
-	 *
-	 * @param mixed $value The value to convert.
-	 *
-	 * @return string The lowercase string.
-	 */
-	public static function lower( $value ): string {
-		return strtolower( self::from( $value ) );
-	}
-
-	/**
 	 * Convert to sentence case (first letter uppercase).
 	 *
-	 * @param mixed $value The value to convert.
+	 * @param string $string The string to convert.
 	 *
 	 * @return string The sentence case string.
 	 */
-	public static function sentence( $value ): string {
-		return ucfirst( strtolower( self::from( $value ) ) );
+	public static function sentence( string $string ): string {
+		return ucfirst( strtolower( $string ) );
 	}
 
-	/** Content Processing ****************************************************/
+	// ========================================
+	// Content Processing
+	// ========================================
 
 	/**
 	 * Create a safe excerpt from content.
@@ -552,53 +424,39 @@ class Str {
 		return self::truncate( $content, $length );
 	}
 
+	// ========================================
+	// Utility Methods
+	// ========================================
+
 	/**
-	 * Get an estimated reading time for text content.
+	 * Generate a random string.
 	 *
-	 * @param string $content          The content to analyze.
-	 * @param int    $words_per_minute Average reading speed.
+	 * @param int $length The length of the string.
 	 *
-	 * @return array Array with 'minutes' and 'seconds' keys.
+	 * @return string The random string.
 	 */
-	public static function reading_time( string $content, int $words_per_minute = 200 ): array {
-		$word_count    = str_word_count( wp_strip_all_tags( $content ) );
-		$total_minutes = $word_count / $words_per_minute;
-
-		$minutes = floor( $total_minutes );
-		$seconds = round( ( $total_minutes - $minutes ) * 60 );
-
-		return [
-			'minutes' => (int) $minutes,
-			'seconds' => (int) $seconds
-		];
+	public static function random( int $length = 16 ): string {
+		return wp_generate_password( $length, false, false );
 	}
 
 	/**
-	 * Count the number of words in a string.
+	 * Mask sensitive data in a string.
 	 *
-	 * @param string $string The text to count words in.
+	 * @param string $string  The string to mask.
+	 * @param int    $visible Number of characters to show at start/end.
+	 * @param string $mask    The masking character.
 	 *
-	 * @return int The number of words.
+	 * @return string The masked string.
 	 */
-	public static function word_count( string $string ): int {
-		return str_word_count( wp_strip_all_tags( $string ) );
-	}
-
-	/** Utility Methods *******************************************************/
-
-	/**
-	 * Convert a value to string safely.
-	 *
-	 * @param mixed $value The value to convert.
-	 *
-	 * @return string The string representation.
-	 */
-	public static function from( $value ): string {
-		if ( is_array( $value ) || is_object( $value ) ) {
-			return wp_json_encode( $value ) ?: '';
+	public static function mask( string $string, int $visible = 4, string $mask = '*' ): string {
+		$length = strlen( $string );
+		if ( $length <= $visible * 2 ) {
+			return str_repeat( $mask, $length );
 		}
 
-		return (string) $value;
+		return substr( $string, 0, $visible ) .
+		       str_repeat( $mask, $length - ( $visible * 2 ) ) .
+		       substr( $string, - $visible );
 	}
 
 	/**
@@ -613,14 +471,18 @@ class Str {
 	}
 
 	/**
-	 * Normalize a string by trimming and converting to lowercase.
+	 * Convert a value to string safely.
 	 *
-	 * @param string $string The string to normalize.
+	 * @param mixed $value The value to convert.
 	 *
-	 * @return string The normalized string.
+	 * @return string The string representation.
 	 */
-	public static function normalize( string $string ): string {
-		return strtolower( trim( $string ) );
+	public static function from( $value ): string {
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return wp_json_encode( $value ) ?: '';
+		}
+
+		return (string) $value;
 	}
 
 	/**
@@ -666,18 +528,7 @@ class Str {
 	 * @return array Array of lines.
 	 */
 	public static function to_lines( string $string ): array {
-		return array_filter( explode( PHP_EOL, $string ) );
-	}
-
-	/**
-	 * Split string into sentences array.
-	 *
-	 * @param string $string The string to split.
-	 *
-	 * @return array Array of sentences.
-	 */
-	public static function to_sentences( string $string ): array {
-		return array_filter( preg_split( '/[.!?]+/', $string ) );
+		return array_filter( preg_split( '/\r\n|\r|\n/', $string ) );
 	}
 
 }
