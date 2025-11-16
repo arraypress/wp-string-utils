@@ -436,7 +436,7 @@ class Str {
 	 * @return string The random string.
 	 */
 	public static function random( int $length = 16 ): string {
-		return wp_generate_password( $length, false, false );
+		return wp_generate_password( $length, false );
 	}
 
 	/**
