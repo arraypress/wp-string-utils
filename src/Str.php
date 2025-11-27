@@ -22,9 +22,7 @@ namespace ArrayPress\StringUtils;
  */
 class Str {
 
-	// ========================================
-	// String Checking
-	// ========================================
+	/** Checking ******************************************************************/
 
 	/**
 	 * Check if a string contains any of the given needles.
@@ -188,31 +186,7 @@ class Str {
 		return ctype_alnum( $string );
 	}
 
-	/**
-	 * Check if a string is uppercase.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is uppercase.
-	 */
-	public static function is_upper( string $string ): bool {
-		return $string === strtoupper( $string ) && ctype_alpha( $string );
-	}
-
-	/**
-	 * Check if a string is lowercase.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is lowercase.
-	 */
-	public static function is_lower( string $string ): bool {
-		return $string === strtolower( $string ) && ctype_alpha( $string );
-	}
-
-	// ========================================
-	// String Manipulation
-	// ========================================
+	/** Manipulation **************************************************************/
 
 	/**
 	 * Replace the first occurrence of a string.
@@ -340,9 +314,38 @@ class Str {
 		return preg_replace( '/\s+/', '', $string );
 	}
 
-	// ========================================
-	// Case Conversion
-	// ========================================
+	/**
+	 * Mask sensitive data in a string.
+	 *
+	 * @param string $string  The string to mask.
+	 * @param int    $visible Number of characters to show at start/end.
+	 * @param string $mask    The masking character.
+	 *
+	 * @return string The masked string.
+	 */
+	public static function mask( string $string, int $visible = 4, string $mask = '*' ): string {
+		$length = strlen( $string );
+		if ( $length <= $visible * 2 ) {
+			return str_repeat( $mask, $length );
+		}
+
+		return substr( $string, 0, $visible ) .
+		       str_repeat( $mask, $length - ( $visible * 2 ) ) .
+		       substr( $string, - $visible );
+	}
+
+	/**
+	 * Remove accents and convert to ASCII.
+	 *
+	 * @param string $string The string to convert.
+	 *
+	 * @return string The ASCII string.
+	 */
+	public static function ascii( string $string ): string {
+		return remove_accents( $string );
+	}
+
+	/** Case Conversion ***********************************************************/
 
 	/**
 	 * Convert a string to camelCase.
@@ -403,72 +406,32 @@ class Str {
 		return ucfirst( strtolower( $string ) );
 	}
 
-	// ========================================
-	// Content Processing
-	// ========================================
-
 	/**
-	 * Create a safe excerpt from content.
+	 * Extract initials from a name.
 	 *
-	 * @param string $content    The content to excerpt.
-	 * @param int    $length     Maximum length in characters.
-	 * @param bool   $strip_tags Whether to strip HTML tags.
+	 * @param string $name      The name to extract initials from.
+	 * @param int    $limit     Maximum number of initials to return. Default 0 (no limit).
+	 * @param bool   $uppercase Whether to return uppercase initials. Default true.
 	 *
-	 * @return string The excerpt.
+	 * @return string The initials.
 	 */
-	public static function excerpt( string $content, int $length = 150, bool $strip_tags = true ): string {
-		if ( $strip_tags ) {
-			$content = wp_strip_all_tags( $content );
+	public static function initials( string $name, int $limit = 0, bool $uppercase = true ): string {
+		$words = array_filter( explode( ' ', trim( $name ) ) );
+
+		if ( empty( $words ) ) {
+			return '';
 		}
 
-		return self::truncate( $content, $length );
-	}
-
-	// ========================================
-	// Utility Methods
-	// ========================================
-
-	/**
-	 * Generate a random string.
-	 *
-	 * @param int $length The length of the string.
-	 *
-	 * @return string The random string.
-	 */
-	public static function random( int $length = 16 ): string {
-		return wp_generate_password( $length, false );
-	}
-
-	/**
-	 * Mask sensitive data in a string.
-	 *
-	 * @param string $string  The string to mask.
-	 * @param int    $visible Number of characters to show at start/end.
-	 * @param string $mask    The masking character.
-	 *
-	 * @return string The masked string.
-	 */
-	public static function mask( string $string, int $visible = 4, string $mask = '*' ): string {
-		$length = strlen( $string );
-		if ( $length <= $visible * 2 ) {
-			return str_repeat( $mask, $length );
+		if ( $limit > 0 ) {
+			$words = array_slice( $words, 0, $limit );
 		}
 
-		return substr( $string, 0, $visible ) .
-		       str_repeat( $mask, $length - ( $visible * 2 ) ) .
-		       substr( $string, - $visible );
+		$initials = implode( '', array_map( fn( $word ) => mb_substr( $word, 0, 1 ), $words ) );
+
+		return $uppercase ? mb_strtoupper( $initials ) : $initials;
 	}
 
-	/**
-	 * Remove accents and convert to ASCII.
-	 *
-	 * @param string $string The string to convert.
-	 *
-	 * @return string The ASCII string.
-	 */
-	public static function ascii( string $string ): string {
-		return remove_accents( $string );
-	}
+	/** Conversion ****************************************************************/
 
 	/**
 	 * Convert a value to string safely.
@@ -498,18 +461,6 @@ class Str {
 	}
 
 	/**
-	 * Convert an array to CSV string.
-	 *
-	 * @param array  $array     The array to convert.
-	 * @param string $separator The separator to use.
-	 *
-	 * @return string The CSV string.
-	 */
-	public static function to_csv( array $array, string $separator = ',' ): string {
-		return implode( $separator, array_map( 'trim', $array ) );
-	}
-
-	/**
 	 * Split string into words array.
 	 *
 	 * @param string $string The string to split.
@@ -529,6 +480,34 @@ class Str {
 	 */
 	public static function to_lines( string $string ): array {
 		return array_filter( preg_split( '/\r\n|\r|\n/', $string ) );
+	}
+
+	/**
+	 * Create a safe excerpt from content.
+	 *
+	 * @param string $content    The content to excerpt.
+	 * @param int    $length     Maximum length in characters.
+	 * @param bool   $strip_tags Whether to strip HTML tags.
+	 *
+	 * @return string The excerpt.
+	 */
+	public static function excerpt( string $content, int $length = 150, bool $strip_tags = true ): string {
+		if ( $strip_tags ) {
+			$content = wp_strip_all_tags( $content );
+		}
+
+		return self::truncate( $content, $length );
+	}
+
+	/**
+	 * Generate a random string.
+	 *
+	 * @param int $length The length of the string.
+	 *
+	 * @return string The random string.
+	 */
+	public static function random( int $length = 16 ): string {
+		return wp_generate_password( $length, false );
 	}
 
 }
