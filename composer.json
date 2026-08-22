@@ -1,6 +1,5 @@
 {
   "name": "arraypress/wp-string-utils",
-  "version": "1.0.0",
   "description": "Essential string manipulation utilities for WordPress development",
   "type": "library",
   "license": "GPL-2.0-or-later",
@@ -12,7 +11,7 @@
     }
   ],
   "require": {
-    "php": ">=7.4"
+    "php": ">=8.2"
   },
   "autoload": {
     "psr-4": {
