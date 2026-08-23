@@ -140,40 +140,8 @@ class Str {
 		return false;
 	}
 
-	/**
-	 * Check if a string is valid JSON.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if valid JSON.
-	 */
-	public static function is_json( string $string ): bool {
-		json_decode( $string );
 
-		return json_last_error() === JSON_ERROR_NONE;
-	}
 
-	/**
-	 * Check if a string is empty or only whitespace.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is blank.
-	 */
-	public static function is_blank( string $string ): bool {
-		return trim( $string ) === '';
-	}
-
-	/**
-	 * Check if a string is a valid URL.
-	 *
-	 * @param string $string The string to check.
-	 *
-	 * @return bool True if the string is a valid URL.
-	 */
-	public static function is_url( string $string ): bool {
-		return filter_var( $string, FILTER_VALIDATE_URL ) !== false;
-	}
 
 	/**
 	 * Check if a string is alphanumeric.
@@ -271,7 +239,14 @@ class Str {
 			return $string;
 		}
 
-		return mb_substr( $string, 0, $length - mb_strlen( $suffix ) ) . $suffix;
+		// max(0, ...) matters: a length shorter than the suffix makes this
+		// negative, and mb_substr() reads a negative length as "all but the
+		// last n characters" -- so asking for a shorter string returned a
+		// longer one. Below the suffix width there is no room for content, so
+		// the suffix alone is the honest answer.
+		$room = max( 0, $length - mb_strlen( $suffix ) );
+
+		return mb_substr( $string, 0, $room ) . $suffix;
 	}
 
 	/**
@@ -330,20 +305,10 @@ class Str {
 		}
 
 		return substr( $string, 0, $visible ) .
-		       str_repeat( $mask, $length - ( $visible * 2 ) ) .
-		       substr( $string, - $visible );
+				str_repeat( $mask, $length - ( $visible * 2 ) ) .
+				substr( $string, - $visible );
 	}
 
-	/**
-	 * Remove accents and convert to ASCII.
-	 *
-	 * @param string $string The string to convert.
-	 *
-	 * @return string The ASCII string.
-	 */
-	public static function ascii( string $string ): string {
-		return remove_accents( $string );
-	}
 
 	/** Case Conversion ***********************************************************/
 
@@ -373,16 +338,6 @@ class Str {
 		return sanitize_key( str_replace( ' ', '_', $string ) );
 	}
 
-	/**
-	 * Convert a string to kebab-case.
-	 *
-	 * @param string $string The string to convert.
-	 *
-	 * @return string The kebab-case string.
-	 */
-	public static function kebab( string $string ): string {
-		return sanitize_title( $string );
-	}
 
 	/**
 	 * Convert a string to Title Case.
@@ -468,7 +423,7 @@ class Str {
 	 * @return array Array of words.
 	 */
 	public static function to_words( string $string ): array {
-		return array_filter( preg_split( '/\s+/', $string ) );
+		return array_values( array_filter( preg_split( '/\s+/', $string ) ) );
 	}
 
 	/**
@@ -479,7 +434,7 @@ class Str {
 	 * @return array Array of lines.
 	 */
 	public static function to_lines( string $string ): array {
-		return array_filter( preg_split( '/\r\n|\r|\n/', $string ) );
+		return array_values( array_filter( preg_split( '/\r\n|\r|\n/', $string ) ) );
 	}
 
 	/**
@@ -498,16 +453,4 @@ class Str {
 
 		return self::truncate( $content, $length );
 	}
-
-	/**
-	 * Generate a random string.
-	 *
-	 * @param int $length The length of the string.
-	 *
-	 * @return string The random string.
-	 */
-	public static function random( int $length = 16 ): string {
-		return wp_generate_password( $length, false );
-	}
-
 }
