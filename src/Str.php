@@ -111,28 +111,28 @@ class Str {
 	/**
 	 * Check if a string matches any pattern in an array.
 	 *
-	 * @param string $string   The string to check.
+	 * @param string $value   The string to check.
 	 * @param array  $patterns Array of patterns to match against.
 	 * @param bool   $wildcard Whether to support wildcard (*) matching.
 	 *
 	 * @return bool True if a match is found.
 	 */
-	public static function matches_any( string $string, array $patterns, bool $wildcard = false ): bool {
-		if ( empty( $string ) || empty( $patterns ) ) {
+	public static function matches_any( string $value, array $patterns, bool $wildcard = false ): bool {
+		if ( empty( $value ) || empty( $patterns ) ) {
 			return false;
 		}
 
-		$string = strtolower( trim( $string ) );
+		$value = strtolower( trim( $value ) );
 
 		foreach ( $patterns as $pattern ) {
 			$pattern = strtolower( trim( $pattern ) );
 
 			if ( $wildcard && str_ends_with( $pattern, '*' ) ) {
 				$pattern = rtrim( $pattern, '*' );
-				if ( str_starts_with( $string, $pattern ) ) {
+				if ( str_starts_with( $value, $pattern ) ) {
 					return true;
 				}
-			} elseif ( $string === $pattern ) {
+			} elseif ( $value === $pattern ) {
 				return true;
 			}
 		}
@@ -146,12 +146,12 @@ class Str {
 	/**
 	 * Check if a string is alphanumeric.
 	 *
-	 * @param string $string The string to validate.
+	 * @param string $value The string to validate.
 	 *
 	 * @return bool True if the string is alphanumeric.
 	 */
-	public static function is_alphanumeric( string $string ): bool {
-		return ctype_alnum( $string );
+	public static function is_alphanumeric( string $value ): bool {
+		return ctype_alnum( $value );
 	}
 
 	/** Manipulation **************************************************************/
@@ -228,15 +228,15 @@ class Str {
 	/**
 	 * Truncate a string to a specified length with optional suffix.
 	 *
-	 * @param string $string The string to truncate.
+	 * @param string $value The string to truncate.
 	 * @param int    $length The maximum length.
 	 * @param string $suffix The suffix to append if truncated.
 	 *
 	 * @return string The truncated string.
 	 */
-	public static function truncate( string $string, int $length, string $suffix = '...' ): string {
-		if ( mb_strlen( $string ) <= $length ) {
-			return $string;
+	public static function truncate( string $value, int $length, string $suffix = '...' ): string {
+		if ( mb_strlen( $value ) <= $length ) {
+			return $value;
 		}
 
 		// max(0, ...) matters: a length shorter than the suffix makes this
@@ -246,22 +246,22 @@ class Str {
 		// the suffix alone is the honest answer.
 		$room = max( 0, $length - mb_strlen( $suffix ) );
 
-		return mb_substr( $string, 0, $room ) . $suffix;
+		return mb_substr( $value, 0, $room ) . $suffix;
 	}
 
 	/**
 	 * Limit the number of words in a string.
 	 *
-	 * @param string $string     The input string.
+	 * @param string $value     The input string.
 	 * @param int    $word_limit The number of words to limit to.
 	 * @param string $suffix     The suffix to append if truncated.
 	 *
 	 * @return string The word-limited string.
 	 */
-	public static function words( string $string, int $word_limit, string $suffix = '...' ): string {
-		$words = explode( ' ', $string );
+	public static function words( string $value, int $word_limit, string $suffix = '...' ): string {
+		$words = explode( ' ', $value );
 		if ( count( $words ) <= $word_limit ) {
-			return $string;
+			return $value;
 		}
 
 		return implode( ' ', array_slice( $words, 0, $word_limit ) ) . $suffix;
@@ -270,43 +270,43 @@ class Str {
 	/**
 	 * Reduce multiple whitespace characters to a single space.
 	 *
-	 * @param string $string The input string.
+	 * @param string $value The input string.
 	 *
 	 * @return string The cleaned string.
 	 */
-	public static function reduce_whitespace( string $string ): string {
-		return preg_replace( '/\s+/', ' ', trim( $string ) );
+	public static function reduce_whitespace( string $value ): string {
+		return preg_replace( '/\s+/', ' ', trim( $value ) );
 	}
 
 	/**
 	 * Remove all whitespace from a string.
 	 *
-	 * @param string $string The input string.
+	 * @param string $value The input string.
 	 *
 	 * @return string The string with all whitespace removed.
 	 */
-	public static function remove_whitespace( string $string ): string {
-		return preg_replace( '/\s+/', '', $string );
+	public static function remove_whitespace( string $value ): string {
+		return preg_replace( '/\s+/', '', $value );
 	}
 
 	/**
 	 * Mask sensitive data in a string.
 	 *
-	 * @param string $string  The string to mask.
+	 * @param string $value  The string to mask.
 	 * @param int    $visible Number of characters to show at start/end.
 	 * @param string $mask    The masking character.
 	 *
 	 * @return string The masked string.
 	 */
-	public static function mask( string $string, int $visible = 4, string $mask = '*' ): string {
-		$length = strlen( $string );
+	public static function mask( string $value, int $visible = 4, string $mask = '*' ): string {
+		$length = strlen( $value );
 		if ( $length <= $visible * 2 ) {
 			return str_repeat( $mask, $length );
 		}
 
-		return substr( $string, 0, $visible ) .
+		return substr( $value, 0, $visible ) .
 				str_repeat( $mask, $length - ( $visible * 2 ) ) .
-				substr( $string, - $visible );
+				substr( $value, - $visible );
 	}
 
 
@@ -315,50 +315,50 @@ class Str {
 	/**
 	 * Convert a string to camelCase.
 	 *
-	 * @param string $string The string to convert.
+	 * @param string $value The string to convert.
 	 *
 	 * @return string The camelCase string.
 	 */
-	public static function camel( string $string ): string {
-		$string = str_replace( [ '-', '_' ], ' ', $string );
-		$string = ucwords( $string );
-		$string = str_replace( ' ', '', $string );
+	public static function camel( string $value ): string {
+		$value = str_replace( [ '-', '_' ], ' ', $value );
+		$value = ucwords( $value );
+		$value = str_replace( ' ', '', $value );
 
-		return lcfirst( $string );
+		return lcfirst( $value );
 	}
 
 	/**
 	 * Convert a string to snake_case.
 	 *
-	 * @param string $string The string to convert.
+	 * @param string $value The string to convert.
 	 *
 	 * @return string The snake_case string.
 	 */
-	public static function snake( string $string ): string {
-		return sanitize_key( str_replace( ' ', '_', $string ) );
+	public static function snake( string $value ): string {
+		return sanitize_key( str_replace( ' ', '_', $value ) );
 	}
 
 
 	/**
 	 * Convert a string to Title Case.
 	 *
-	 * @param string $string The string to convert.
+	 * @param string $value The string to convert.
 	 *
 	 * @return string The Title Case string.
 	 */
-	public static function title( string $string ): string {
-		return ucwords( strtolower( $string ) );
+	public static function title( string $value ): string {
+		return ucwords( strtolower( $value ) );
 	}
 
 	/**
 	 * Convert to sentence case (first letter uppercase).
 	 *
-	 * @param string $string The string to convert.
+	 * @param string $value The string to convert.
 	 *
 	 * @return string The sentence case string.
 	 */
-	public static function sentence( string $string ): string {
-		return ucfirst( strtolower( $string ) );
+	public static function sentence( string $value ): string {
+		return ucfirst( strtolower( $value ) );
 	}
 
 	/**
@@ -406,35 +406,35 @@ class Str {
 	/**
 	 * Convert a comma-separated string to an array.
 	 *
-	 * @param string $string    The comma-separated string.
+	 * @param string $value    The comma-separated string.
 	 * @param string $separator The separator to use.
 	 *
 	 * @return array The resulting array.
 	 */
-	public static function to_array( string $string, string $separator = ',' ): array {
-		return array_map( 'trim', explode( $separator, $string ) );
+	public static function to_array( string $value, string $separator = ',' ): array {
+		return array_map( 'trim', explode( $separator, $value ) );
 	}
 
 	/**
 	 * Split string into words array.
 	 *
-	 * @param string $string The string to split.
+	 * @param string $value The string to split.
 	 *
 	 * @return array Array of words.
 	 */
-	public static function to_words( string $string ): array {
-		return array_values( array_filter( preg_split( '/\s+/', $string ) ) );
+	public static function to_words( string $value ): array {
+		return array_values( array_filter( preg_split( '/\s+/', $value ) ) );
 	}
 
 	/**
 	 * Split string into lines array.
 	 *
-	 * @param string $string The string to split.
+	 * @param string $value The string to split.
 	 *
 	 * @return array Array of lines.
 	 */
-	public static function to_lines( string $string ): array {
-		return array_values( array_filter( preg_split( '/\r\n|\r|\n/', $string ) ) );
+	public static function to_lines( string $value ): array {
+		return array_values( array_filter( preg_split( '/\r\n|\r|\n/', $value ) ) );
 	}
 
 	/**
