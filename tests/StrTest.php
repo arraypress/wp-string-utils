@@ -200,6 +200,112 @@ final class StrTest extends TestCase {
 		$this->assertSame( 'x-b-b', Str::replace_first( 'b', 'x', 'b-b-b' ) );
 		$this->assertSame( 'b-b-x', Str::replace_last( 'b', 'x', 'b-b-b' ) );
 	}
+
+	/**
+	 * A zero is a value, not an absence.
+	 *
+	 * empty( '0' ) is true, so every helper that guarded with empty() did
+	 * nothing for the one character that is both a legitimate value and a
+	 * falsy one: a search for '0' never replaced, a pattern of '0' never
+	 * matched, a line of '0' vanished from the split.
+	 */
+	public function test_a_zero_is_not_empty(): void {
+		$this->assertTrue( Str::matches_any( '0', [ '0' ] ) );
+		$this->assertSame( '1x0', Str::replace_first( '0', 'x', '100' ) );
+		$this->assertSame( 'x', Str::replace_first( '0', 'x', '0' ) );
+		$this->assertSame( '10x', Str::replace_last( '0', 'x', '100' ) );
+		$this->assertSame( [ 'a', '0', 'b' ], Str::to_lines( "a\n0\nb" ) );
+		$this->assertSame( [ 'a', '0', 'b' ], Str::to_words( 'a 0 b' ) );
+		$this->assertSame( '0Z', Str::initials( '0 Zero' ) );
+	}
+
+	/**
+	 * Needles and patterns that arrive as numbers are compared, not fatal.
+	 *
+	 * A settings array holding [ 1, 2 ] has already had its strings cast to
+	 * int, and under strict types that was a TypeError inside trim() or
+	 * str_starts_with() rather than a non-match.
+	 */
+	public function test_needles_and_patterns_may_be_numbers(): void {
+		$this->assertTrue( Str::starts_with( '1abc', [ 1 ] ) );
+		$this->assertTrue( Str::ends_with( 'abc1', [ 1 ] ) );
+		$this->assertTrue( Str::matches_any( '1', [ 1 ] ) );
+		$this->assertFalse( Str::matches_any( 'a', [ 1 ] ) );
+	}
+
+	/**
+	 * snake_case is what the name says.
+	 *
+	 * It used to lowercase and swap spaces for underscores, which left
+	 * 'fooBar' as 'foobar' and 'foo-bar' as 'foo-bar' -- neither of them
+	 * snake_case, and the second one still a hyphen that a database column
+	 * or a meta key cannot have.
+	 */
+	public function test_snake_splits_capitals_and_hyphens(): void {
+		$this->assertSame( 'foo_bar_baz', Str::snake( 'fooBar Baz' ) );
+		$this->assertSame( 'foo_bar', Str::snake( 'foo-bar' ) );
+		$this->assertSame( 'foo_bar', Str::snake( 'FooBar' ) );
+		$this->assertSame( 'html_parser', Str::snake( 'HTMLParser' ) );
+		$this->assertSame( 'already_snake', Str::snake( 'already_snake' ) );
+		$this->assertSame( 'a_b', Str::snake( '  a  -  b  ' ) );
+		$this->assertSame( 'price_usd', Str::snake( 'Price (USD)' ) );
+	}
+
+	/**
+	 * mask counts characters, not bytes.
+	 *
+	 * Masking by strlen() cut a multibyte character in half and returned
+	 * broken UTF-8 in place of the one thing this function exists to keep
+	 * readable.
+	 */
+	public function test_mask_is_multibyte_safe(): void {
+		$out = Str::mask( 'héllo wörld', 2 );
+
+		$this->assertSame( 'hé*******ld', $out );
+		$this->assertSame( $out, mb_convert_encoding( $out, 'UTF-8', 'UTF-8' ), 'The mask broke a character.' );
+	}
+
+	/**
+	 * A negative visible count shows nothing rather than something strange.
+	 */
+	public function test_mask_with_a_negative_count_masks_everything(): void {
+		$this->assertSame( '***', Str::mask( 'abc', -1 ) );
+	}
+
+	/**
+	 * words treats a run of whitespace as one gap.
+	 *
+	 * Splitting on a single space made every extra space an empty word, so
+	 * "a  b c" limited to two words came back as "a ..." -- one word and a
+	 * gap, counted as two.
+	 */
+	public function test_words_ignores_runs_of_whitespace(): void {
+		$this->assertSame( 'a b...', Str::words( "a  b\n c", 2 ) );
+		$this->assertSame( "a  b\n c", Str::words( "a  b\n c", 3 ), 'A string within the limit was rewritten.' );
+	}
+
+	/**
+	 * to_array gives a list, and nothing gives an empty one.
+	 *
+	 * explode() turns '' into [ '' ], which every caller then filters out
+	 * again. An empty separator used to be a ValueError.
+	 */
+	public function test_to_array(): void {
+		$this->assertSame( [ 'a', 'b', 'c' ], Str::to_array( 'a, b ,c' ) );
+		$this->assertSame( [ 'a', '', 'b' ], Str::to_array( 'a,,b' ), 'An explicit empty piece is kept.' );
+		$this->assertSame( [], Str::to_array( '' ) );
+		$this->assertSame( [], Str::to_array( '   ' ) );
+		$this->assertSame( [ 'a,b' ], Str::to_array( 'a,b', '' ) );
+	}
+
+	/**
+	 * Title and sentence case handle characters outside ASCII.
+	 */
+	public function test_title_and_sentence_are_multibyte_safe(): void {
+		$this->assertSame( 'Élan Vital', Str::title( 'élan VITAL' ) );
+		$this->assertSame( 'Élan vital', Str::sentence( 'éLAN VITAL' ) );
+		$this->assertSame( '', Str::sentence( '' ) );
+	}
 }
 
 /**

@@ -19,6 +19,12 @@ namespace ArrayPress\StringUtils;
  * Str Class
  *
  * Core operations for string manipulation and validation.
+ *
+ * A note on `empty()`: it is never used on a string here. `empty( '0' )` is
+ * true, so every helper that guarded with it silently did nothing for the one
+ * character that is both a legitimate value and a falsy one -- a search for
+ * '0' never replaced, a pattern of '0' never matched, a line of '0' vanished.
+ * Emptiness is `'' === $value`.
  */
 class Str {
 
@@ -69,15 +75,9 @@ class Str {
 	 * @return bool True if starts with any needle.
 	 */
 	public static function starts_with( string $haystack, $needles ): bool {
-		if ( is_string( $needles ) ) {
-			return str_starts_with( $haystack, $needles );
-		}
-
-		if ( is_array( $needles ) ) {
-			foreach ( $needles as $needle ) {
-				if ( str_starts_with( $haystack, $needle ) ) {
-					return true;
-				}
+		foreach ( (array) $needles as $needle ) {
+			if ( str_starts_with( $haystack, (string) $needle ) ) {
+				return true;
 			}
 		}
 
@@ -93,15 +93,9 @@ class Str {
 	 * @return bool True if ends with any needle.
 	 */
 	public static function ends_with( string $haystack, $needles ): bool {
-		if ( is_string( $needles ) ) {
-			return str_ends_with( $haystack, $needles );
-		}
-
-		if ( is_array( $needles ) ) {
-			foreach ( $needles as $needle ) {
-				if ( str_ends_with( $haystack, $needle ) ) {
-					return true;
-				}
+		foreach ( (array) $needles as $needle ) {
+			if ( str_ends_with( $haystack, (string) $needle ) ) {
+				return true;
 			}
 		}
 
@@ -111,25 +105,31 @@ class Str {
 	/**
 	 * Check if a string matches any pattern in an array.
 	 *
-	 * @param string $value   The string to check.
+	 * Comparison is case-insensitive and ignores surrounding whitespace. With
+	 * wildcards on, a pattern ending in `*` matches any value that starts with
+	 * the part before it.
+	 *
+	 * @param string $value    The string to check.
 	 * @param array  $patterns Array of patterns to match against.
 	 * @param bool   $wildcard Whether to support wildcard (*) matching.
 	 *
 	 * @return bool True if a match is found.
 	 */
 	public static function matches_any( string $value, array $patterns, bool $wildcard = false ): bool {
-		if ( empty( $value ) || empty( $patterns ) ) {
+		$value = strtolower( trim( $value ) );
+
+		if ( '' === $value || [] === $patterns ) {
 			return false;
 		}
 
-		$value = strtolower( trim( $value ) );
-
 		foreach ( $patterns as $pattern ) {
-			$pattern = strtolower( trim( $pattern ) );
+			// Patterns often come out of a settings array, where a numeric one
+			// has already been cast to int. Under strict types that is a
+			// TypeError in trim() rather than a non-match.
+			$pattern = strtolower( trim( (string) $pattern ) );
 
 			if ( $wildcard && str_ends_with( $pattern, '*' ) ) {
-				$pattern = rtrim( $pattern, '*' );
-				if ( str_starts_with( $value, $pattern ) ) {
+				if ( str_starts_with( $value, rtrim( $pattern, '*' ) ) ) {
 					return true;
 				}
 			} elseif ( $value === $pattern ) {
@@ -139,9 +139,6 @@ class Str {
 
 		return false;
 	}
-
-
-
 
 	/**
 	 * Check if a string is alphanumeric.
@@ -166,16 +163,15 @@ class Str {
 	 * @return string The modified string.
 	 */
 	public static function replace_first( string $search, string $replace, string $subject ): string {
-		if ( empty( $search ) || empty( $subject ) ) {
+		if ( '' === $search ) {
 			return $subject;
 		}
 
 		$position = strpos( $subject, $search );
-		if ( $position !== false ) {
-			return substr_replace( $subject, $replace, $position, strlen( $search ) );
-		}
 
-		return $subject;
+		return false === $position
+			? $subject
+			: substr_replace( $subject, $replace, $position, strlen( $search ) );
 	}
 
 	/**
@@ -188,16 +184,15 @@ class Str {
 	 * @return string The modified string.
 	 */
 	public static function replace_last( string $search, string $replace, string $subject ): string {
-		if ( empty( $search ) || empty( $subject ) ) {
+		if ( '' === $search ) {
 			return $subject;
 		}
 
 		$position = strrpos( $subject, $search );
-		if ( $position !== false ) {
-			return substr_replace( $subject, $replace, $position, strlen( $search ) );
-		}
 
-		return $subject;
+		return false === $position
+			? $subject
+			: substr_replace( $subject, $replace, $position, strlen( $search ) );
 	}
 
 	/**
@@ -228,7 +223,11 @@ class Str {
 	/**
 	 * Truncate a string to a specified length with optional suffix.
 	 *
-	 * @param string $value The string to truncate.
+	 * The length is the maximum for the whole result, suffix included. The
+	 * cut is by character, so it can land mid-word; use words() to cut at a
+	 * word boundary instead.
+	 *
+	 * @param string $value  The string to truncate.
 	 * @param int    $length The maximum length.
 	 * @param string $suffix The suffix to append if truncated.
 	 *
@@ -252,19 +251,23 @@ class Str {
 	/**
 	 * Limit the number of words in a string.
 	 *
-	 * @param string $value     The input string.
+	 * Words are separated by any run of whitespace. A string within the limit
+	 * comes back untouched, spacing and all.
+	 *
+	 * @param string $value      The input string.
 	 * @param int    $word_limit The number of words to limit to.
 	 * @param string $suffix     The suffix to append if truncated.
 	 *
 	 * @return string The word-limited string.
 	 */
 	public static function words( string $value, int $word_limit, string $suffix = '...' ): string {
-		$words = explode( ' ', $value );
+		$words = self::to_words( $value );
+
 		if ( count( $words ) <= $word_limit ) {
 			return $value;
 		}
 
-		return implode( ' ', array_slice( $words, 0, $word_limit ) ) . $suffix;
+		return implode( ' ', array_slice( $words, 0, max( 0, $word_limit ) ) ) . $suffix;
 	}
 
 	/**
@@ -275,7 +278,7 @@ class Str {
 	 * @return string The cleaned string.
 	 */
 	public static function reduce_whitespace( string $value ): string {
-		return preg_replace( '/\s+/', ' ', trim( $value ) );
+		return (string) preg_replace( '/\s+/', ' ', trim( $value ) );
 	}
 
 	/**
@@ -286,29 +289,40 @@ class Str {
 	 * @return string The string with all whitespace removed.
 	 */
 	public static function remove_whitespace( string $value ): string {
-		return preg_replace( '/\s+/', '', $value );
+		return (string) preg_replace( '/\s+/', '', $value );
 	}
 
 	/**
 	 * Mask sensitive data in a string.
 	 *
-	 * @param string $value  The string to mask.
-	 * @param int    $visible Number of characters to show at start/end.
+	 * Keeps a few characters at each end and masks the middle. A string too
+	 * short to hide anything is masked entirely rather than shown in full.
+	 *
+	 * @param string $value   The string to mask.
+	 * @param int    $visible Number of characters to show at start and at end.
 	 * @param string $mask    The masking character.
 	 *
 	 * @return string The masked string.
 	 */
 	public static function mask( string $value, int $visible = 4, string $mask = '*' ): string {
-		$length = strlen( $value );
+		// Counted in characters, not bytes: masking by strlen() cut a
+		// multibyte character in half and returned broken UTF-8 in place of
+		// the one thing this function exists to keep readable.
+		$visible = max( 0, $visible );
+		$length  = mb_strlen( $value );
+
 		if ( $length <= $visible * 2 ) {
 			return str_repeat( $mask, $length );
 		}
 
-		return substr( $value, 0, $visible ) .
+		// The tail is taken from an offset counted from the start, because a
+		// negative offset of nought is nought: substr( $value, -0 ) is the
+		// whole string, so a visible count of 0 showed everything after the
+		// mask instead of nothing.
+		return mb_substr( $value, 0, $visible ) .
 				str_repeat( $mask, $length - ( $visible * 2 ) ) .
-				substr( $value, - $visible );
+				mb_substr( $value, $length - $visible );
 	}
-
 
 	/** Case Conversion ***********************************************************/
 
@@ -330,24 +344,38 @@ class Str {
 	/**
 	 * Convert a string to snake_case.
 	 *
+	 * Splits camelCase at its capitals, turns spaces and hyphens into
+	 * underscores, and drops anything that is not a letter, digit or
+	 * underscore. 'fooBar Baz' and 'foo-bar-baz' both become 'foo_bar_baz'.
+	 *
 	 * @param string $value The string to convert.
 	 *
 	 * @return string The snake_case string.
 	 */
 	public static function snake( string $value ): string {
-		return sanitize_key( str_replace( ' ', '_', $value ) );
-	}
+		// Two passes for the capitals: 'HTMLParser' is 'html_parser', not
+		// 'htmlparser', and the first rule alone only sees 'lP'.
+		$value = (string) preg_replace( '/([A-Z]+)([A-Z][a-z])/', '$1_$2', $value );
+		$value = (string) preg_replace( '/([a-z0-9])([A-Z])/', '$1_$2', $value );
+		$value = (string) preg_replace( '/[\s\-]+/', '_', trim( $value ) );
+		$value = (string) preg_replace( '/[^A-Za-z0-9_]/', '', $value );
+		$value = (string) preg_replace( '/_+/', '_', $value );
 
+		return strtolower( trim( $value, '_' ) );
+	}
 
 	/**
 	 * Convert a string to Title Case.
+	 *
+	 * Multibyte-safe: 'élan vital' is 'Élan Vital'. Every word boundary
+	 * counts, hyphens included, so 'mother-in-law' is 'Mother-In-Law'.
 	 *
 	 * @param string $value The string to convert.
 	 *
 	 * @return string The Title Case string.
 	 */
 	public static function title( string $value ): string {
-		return ucwords( strtolower( $value ) );
+		return mb_convert_case( $value, MB_CASE_TITLE, 'UTF-8' );
 	}
 
 	/**
@@ -358,7 +386,9 @@ class Str {
 	 * @return string The sentence case string.
 	 */
 	public static function sentence( string $value ): string {
-		return ucfirst( strtolower( $value ) );
+		$value = mb_strtolower( $value );
+
+		return mb_strtoupper( mb_substr( $value, 0, 1 ) ) . mb_substr( $value, 1 );
 	}
 
 	/**
@@ -371,9 +401,9 @@ class Str {
 	 * @return string The initials.
 	 */
 	public static function initials( string $name, int $limit = 0, bool $uppercase = true ): string {
-		$words = array_filter( explode( ' ', trim( $name ) ) );
+		$words = self::to_words( $name );
 
-		if ( empty( $words ) ) {
+		if ( [] === $words ) {
 			return '';
 		}
 
@@ -404,14 +434,26 @@ class Str {
 	}
 
 	/**
-	 * Convert a comma-separated string to an array.
+	 * Convert a delimited string to an array of trimmed pieces.
 	 *
-	 * @param string $value    The comma-separated string.
+	 * An empty string is an empty list, not a list of one empty string --
+	 * which is what explode() gives, and what every caller then has to
+	 * filter out again. An empty separator does not split at all.
+	 *
+	 * @param string $value     The delimited string.
 	 * @param string $separator The separator to use.
 	 *
 	 * @return array The resulting array.
 	 */
 	public static function to_array( string $value, string $separator = ',' ): array {
+		if ( '' === trim( $value ) ) {
+			return [];
+		}
+
+		if ( '' === $separator ) {
+			return [ trim( $value ) ];
+		}
+
 		return array_map( 'trim', explode( $separator, $value ) );
 	}
 
@@ -423,7 +465,7 @@ class Str {
 	 * @return array Array of words.
 	 */
 	public static function to_words( string $value ): array {
-		return array_values( array_filter( preg_split( '/\s+/', $value ) ) );
+		return self::without_empty( preg_split( '/\s+/', $value ) ?: [] );
 	}
 
 	/**
@@ -434,7 +476,7 @@ class Str {
 	 * @return array Array of lines.
 	 */
 	public static function to_lines( string $value ): array {
-		return array_values( array_filter( preg_split( '/\r\n|\r|\n/', $value ) ) );
+		return self::without_empty( preg_split( '/\r\n|\r|\n/', $value ) ?: [] );
 	}
 
 	/**
@@ -452,5 +494,19 @@ class Str {
 		}
 
 		return self::truncate( $content, $length );
+	}
+
+	/**
+	 * Drop the empty strings from a list of pieces, and reindex.
+	 *
+	 * Not array_filter() without a callback: that drops '0' too, so a line
+	 * or a word that happened to be a zero disappeared from the result.
+	 *
+	 * @param array $pieces The pieces.
+	 *
+	 * @return array The non-empty pieces, as a list.
+	 */
+	private static function without_empty( array $pieces ): array {
+		return array_values( array_filter( $pieces, static fn( $piece ): bool => '' !== $piece ) );
 	}
 }
